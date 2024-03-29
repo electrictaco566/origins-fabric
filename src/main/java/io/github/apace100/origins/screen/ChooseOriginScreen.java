@@ -166,14 +166,10 @@ public class ChooseOriginScreen extends OriginDisplayScreen {
 
 	@Override
 	protected Text getTitleText() {
-
 		OriginLayer currentLayer = super.getCurrentLayer();
-		if (currentLayer.shouldOverrideChooseOriginTitle()) {
-			return currentLayer.getChooseOriginTitle();
-		}
-
-		return Text.translatable(Origins.MODID + ".gui.choose_origin.title", Text.translatable(currentLayer.getTranslationKey()));
-
+		return currentLayer.shouldOverrideChooseOriginTitle()
+			? currentLayer.getChooseOriginTitle()
+			: Text.translatable(Origins.MODID + ".gui.choose_origin.title", currentLayer.getName());
 	}
 
 	private void initRandomOrigin() {
