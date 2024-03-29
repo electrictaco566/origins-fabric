@@ -1,13 +1,11 @@
 package io.github.apace100.origins.badge;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.*;
 import io.github.apace100.apoli.integration.PostPowerLoadCallback;
 import io.github.apace100.apoli.integration.PrePowerReloadCallback;
 import io.github.apace100.apoli.power.*;
 import io.github.apace100.calio.registry.DataObjectRegistry;
+import io.github.apace100.calio.util.DynamicIdentifier;
 import io.github.apace100.origins.Origins;
 import io.github.apace100.origins.integration.AutoBadgeCallback;
 import io.github.apace100.origins.networking.ModPackets;
@@ -79,12 +77,13 @@ public final class BadgeManager {
     }
 
     public static void putPowerBadge(Identifier powerId, Badge badge) {
-        List<Badge> badgeList = BADGES.computeIfAbsent(powerId, id -> new LinkedList<>());
-        badgeList.add(badge);
+        BADGES
+            .computeIfAbsent(powerId, id -> new LinkedList<>())
+            .add(badge);
     }
 
     public static List<Badge> getPowerBadges(Identifier powerId) {
-        return BADGES.computeIfAbsent(powerId, id -> new LinkedList<>());
+        return BADGES.getOrDefault(powerId, List.of());
     }
 
     public static void clear() {
@@ -99,29 +98,27 @@ public final class BadgeManager {
 
         try {
 
-            if (!data.isJsonArray()) {
+            if (!(data instanceof JsonArray dataArray)) {
                 throw new JsonSyntaxException("\"badges\" should be a JSON array!");
             }
 
-            BADGES.computeIfAbsent(powerId, id -> new LinkedList<>());
-            for (JsonElement badgeJson : data.getAsJsonArray()) {
+            for (JsonElement badgeJson : dataArray) {
 
+                Badge badge;
                 if (badgeJson instanceof JsonObject badgeObject) {
-                    putPowerBadge(powerId, REGISTRY.readDataObject(badgeObject));
-                } else if (badgeJson instanceof JsonPrimitive badgePrimitive) {
-
-                    Identifier badgeId = new Identifier(badgePrimitive.getAsString());
-                    Badge badge = REGISTRY.get(badgeId);
-
-                    if (badge != null) {
-                        putPowerBadge(powerId, badge);
-                    } else {
-                        throw new JsonSyntaxException("Badge \"" + badgeId + "\" is undefined!");
-                    }
-
-                } else {
-                    throw new JsonSyntaxException("JSON arrays are not allowed!");
+                    badge = REGISTRY.readDataObject(badgeObject);
                 }
+
+                else if (badgeJson instanceof JsonPrimitive badgePrimitive) {
+                    Identifier badgeId = DynamicIdentifier.of(badgePrimitive);
+                    badge = REGISTRY.get(badgeId);
+                }
+
+                else {
+                    throw new JsonSyntaxException("Nested JSON arrays are not allowed!");
+                }
+
+                putPowerBadge(powerId, badge);
 
             }
 
@@ -133,22 +130,13 @@ public final class BadgeManager {
 
     public static void readAutoBadges(Identifier powerId, Identifier factoryId, boolean isSubPower, JsonObject json, PowerType<?> powerType) {
 
-        if(BADGES.containsKey(powerId) || powerType.isHidden() || isSubPower) {
-            // No auto-badges should be created if:
-            // - The power has custom badges defined in the data
-            // - The power is hidden
-            // - The power is a sub-power
-            return;
-        }
+        //  Auto-badges will only be generated if:
+        //  -   The power doesn't have any badges defined
+        //  -   The power is not hidden (except if it's a sub-power)
 
-        if(powerType instanceof MultiplePowerType<?> mp) {
-            // Multiple powers retrieve their automatic badges from all sub-powers
-            List<Badge> badgeList = BADGES.computeIfAbsent(powerId, id -> new LinkedList<>());
-            mp.getSubPowers().stream().map(PowerTypeRegistry::get).forEach(subPowerType ->
-                AutoBadgeCallback.EVENT.invoker().createAutoBadge(subPowerType.getIdentifier(), subPowerType, badgeList)
-            );
-        } else {
-            AutoBadgeCallback.EVENT.invoker()
+        if (!BADGES.containsKey(powerId) && (isSubPower || !powerType.isHidden())) {
+            AutoBadgeCallback.EVENT
+                .invoker()
                 .createAutoBadge(powerId, powerType, BADGES.computeIfAbsent(powerId, id -> new LinkedList<>()));
         }
 

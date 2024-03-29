@@ -1,6 +1,8 @@
 package io.github.apace100.origins.screen;
 
+import io.github.apace100.apoli.power.MultiplePowerType;
 import io.github.apace100.apoli.power.PowerType;
+import io.github.apace100.apoli.power.PowerTypeRegistry;
 import io.github.apace100.apoli.screen.widget.ScrollingTextWidget;
 import io.github.apace100.apoli.util.TextAlignment;
 import io.github.apace100.origins.Origins;
@@ -399,35 +401,40 @@ public class OriginDisplayScreen extends Screen {
                 int badgeOffsetX = 0;
                 int badgeOffsetY = 0;
 
-                for (Badge badge : BadgeManager.getPowerBadges(power.getIdentifier())) {
+                for (PowerType<?> subPower : this.getSubPowersAndSelf(power)) {
 
-                    int badgeX = badgeStartX + 10 * badgeOffsetX;
-                    int badgeY = (y - 1) + 10 * badgeOffsetY;
+                    for (Badge badge : BadgeManager.getPowerBadges(subPower.getIdentifier())) {
 
-                    if (badgeX >= badgeEndX) {
+                        int badgeX = badgeStartX + 10 * badgeOffsetX;
+                        int badgeY = (y - 1) + 10 * badgeOffsetY;
 
-                        badgeOffsetX = 0;
-                        badgeOffsetY++;
+                        if (badgeX >= badgeEndX) {
 
-                        badgeX = badgeStartX = x;
-                        badgeY = (y - 1) + 10 * badgeOffsetY;
+                            badgeOffsetX = 0;
+                            badgeOffsetY++;
+
+                            badgeX = badgeStartX = x;
+                            badgeY = (y - 1) + 10 * badgeOffsetY;
+
+                        }
+
+                        if (badgeY >= startY - 34 && badgeY <= endY + 12) {
+
+                            RenderedBadge renderedBadge = new RenderedBadge(subPower, badge, badgeX, badgeY);
+                            renderedBadges.add(renderedBadge);
+
+                            context.drawTexture(badge.spriteId(), renderedBadge.x, renderedBadge.y, -2, 0, 0, 9, 9, 9, 9);
+
+                        }
+
+                        badgeOffsetX++;
 
                     }
 
-                    if (badgeY >= startY - 34 && badgeY <= endY + 12) {
-
-                        RenderedBadge renderedBadge = new RenderedBadge(power, badge, badgeX, badgeY);
-                        renderedBadges.add(renderedBadge);
-
-                        context.drawTexture(badge.spriteId(), renderedBadge.x, renderedBadge.y, -2, 0, 0, 9, 9, 9, 9);
-
-                    }
-
-                    badgeOffsetX++;
+                    y += badgeOffsetY * 10;
 
                 }
 
-                y += badgeOffsetY * 10;
                 for (OrderedText powerDescriptionLine : textRenderer.wrapLines(power.getDescription(), textWidthLimit)) {
 
                     y += 12;
@@ -446,6 +453,29 @@ public class OriginDisplayScreen extends Screen {
 
         y += scrollPos;
         currentMaxScroll = Math.max(0, y - 14 - (guiTop + 158));
+
+    }
+
+    private List<PowerType<?>> getSubPowersAndSelf(PowerType<?> powerType) {
+
+        List<PowerType<?>> powers = new LinkedList<>();
+        powers.add(powerType);
+
+        if (!(powerType instanceof MultiplePowerType<?> multiplePowerType)) {
+            return powers;
+        }
+
+        for (Identifier subPowerTypeId : multiplePowerType.getSubPowers()) {
+
+            PowerType<?> subPowerType = PowerTypeRegistry.getNullable(subPowerTypeId);
+
+            if (subPowerType != null) {
+                powers.add(subPowerType);
+            }
+
+        }
+
+        return powers;
 
     }
 
