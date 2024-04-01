@@ -20,6 +20,10 @@
     },
     "prevent_seeing": {
         "type": "origins:prevent_entity_render",
+        "bientity_condition": {
+            "type": "apoli:equal",
+            "inverted": true
+        },
         "entity_condition": {
             "type": "origins:equipped_item",
             "equipment_slot": "head",
