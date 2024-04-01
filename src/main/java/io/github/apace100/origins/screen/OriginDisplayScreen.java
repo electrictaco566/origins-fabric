@@ -432,10 +432,9 @@ public class OriginDisplayScreen extends Screen {
 
                     }
 
-                    y += badgeOffsetY * 10;
-
                 }
 
+                y += badgeOffsetY * 10;
                 for (OrderedText powerDescriptionLine : textRenderer.wrapLines(power.getDescription(), textWidthLimit)) {
 
                     y += 12;
