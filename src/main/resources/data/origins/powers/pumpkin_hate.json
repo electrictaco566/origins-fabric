@@ -15,7 +15,8 @@
                     }
                 }
             ]
-        }
+        },
+        "name": "power.origins.pumpkin_hate.name"
     },
     "prevent_seeing": {
         "type": "origins:prevent_entity_render",
