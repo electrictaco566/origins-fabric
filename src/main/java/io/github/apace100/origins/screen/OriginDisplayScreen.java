@@ -27,6 +27,7 @@ import net.minecraft.util.math.MathHelper;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class OriginDisplayScreen extends Screen {
 
@@ -401,9 +402,9 @@ public class OriginDisplayScreen extends Screen {
                 int badgeOffsetX = 0;
                 int badgeOffsetY = 0;
 
-                for (PowerType<?> subPower : this.getSubPowersAndSelf(power)) {
+                for (PowerType<?> otherPower : this.getSubPowersOrSelf(power, BadgeManager::hasPowerBadges)) {
 
-                    for (Badge badge : BadgeManager.getPowerBadges(subPower.getIdentifier())) {
+                    for (Badge badge : BadgeManager.getPowerBadges(otherPower.getIdentifier())) {
 
                         int badgeX = badgeStartX + 10 * badgeOffsetX;
                         int badgeY = (y - 1) + 10 * badgeOffsetY;
@@ -420,7 +421,7 @@ public class OriginDisplayScreen extends Screen {
 
                         if (badgeY >= startY - 34 && badgeY <= endY + 12) {
 
-                            RenderedBadge renderedBadge = new RenderedBadge(subPower, badge, badgeX, badgeY);
+                            RenderedBadge renderedBadge = new RenderedBadge(otherPower, badge, badgeX, badgeY);
                             renderedBadges.add(renderedBadge);
 
                             context.drawTexture(badge.spriteId(), renderedBadge.x, renderedBadge.y, -2, 0, 0, 9, 9, 9, 9);
@@ -456,12 +457,12 @@ public class OriginDisplayScreen extends Screen {
 
     }
 
-    private List<PowerType<?>> getSubPowersAndSelf(PowerType<?> powerType) {
+    protected List<PowerType<?>> getSubPowersOrSelf(PowerType<?> powerType, Predicate<PowerType<?>> multiplePredicate) {
 
         List<PowerType<?>> powers = new LinkedList<>();
         powers.add(powerType);
 
-        if (!(powerType instanceof MultiplePowerType<?> multiplePowerType)) {
+        if (!(powerType instanceof MultiplePowerType<?> multiplePowerType) || multiplePredicate.test(multiplePowerType)) {
             return powers;
         }
 

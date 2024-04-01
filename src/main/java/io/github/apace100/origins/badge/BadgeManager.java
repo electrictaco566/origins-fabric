@@ -86,6 +86,14 @@ public final class BadgeManager {
         return BADGES.getOrDefault(powerId, List.of());
     }
 
+    public static boolean hasPowerBadges(Identifier powerId) {
+        return BADGES.containsKey(powerId);
+    }
+
+    public static boolean hasPowerBadges(PowerType<?> powerType) {
+        return hasPowerBadges(powerType.getIdentifier());
+    }
+
     public static void clear() {
         BADGES.clear();
     }
